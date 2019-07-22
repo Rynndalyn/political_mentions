@@ -1,0 +1,64 @@
+import json
+import re
+#from tweepy import OAuthHandler
+import numpy as np
+import matplotlib.pyplot as plt
+from twython import Twython
+from wordcloud import WordCloud, STOPWORDS
+from PIL import Image
+from IPython.display import Image as im
+
+
+#These are my API keys
+consumer_key = 'GZR7C9N8L3LVvek3Ixhz7Q7AG'
+consumer_secret = 'NIWW5nzKdLfYZPdMkLPHOdSbAtQMZvWTrTjPk4b6NdWfJmARRa'
+access_token = '419602979-CR3nQCsRkVIUnKQ7NNVD0KQbom9894g8tMp4LcaH'
+access_secret = '17QwIGxPXNl03enDnORSBRWAhLGylTL9kysyB1BIr8hn5'
+twitter = Twython(consumer_key, consumer_secret)
+
+#Get timeline
+user_timeline=twitter.get_user_timeline(screen_name='PeteButtigieg',count=1)
+
+#Get most recent id
+last_id = user_timeline[0]['id']-1
+for i in range(16):
+    batch = twitter.get_user_timeline(screen_name='PeteButtigieg',count=200,max_id=last_id)
+    user_timeline.extend(batch)
+    last_id = user_timeline[-1]['id'] - 1
+
+raw_tweets = []
+
+for tweets in user_timeline:
+    raw_tweets.append(tweets['text'])
+
+#Create a string form of our list of text
+raw_string = ''.join(raw_tweets)
+no_links = re.sub(r'http\S+', '', raw_string)
+no_unicode = re.sub(r"\\[a-z][a-z]?[0-9]+", '', no_links)
+no_amp = re.sub(r'\&amp\;', '', no_unicode)
+no_users = re.sub(r'\@.*\b', '', no_amp)
+no_special_characters = re.sub('[^A-Za-z ]+', '', no_users)
+
+#Clean text
+words = no_special_characters.split(" ")
+words = [w for w in words if len(w) > 2]  # ignore a, an, be, ...
+words = [w.lower() for w in words]
+words = [w for w in words if w not in STOPWORDS]
+
+mask = np.array(Image.open('/home/rynn/Disk_pack1.png'))
+
+wc = WordCloud(background_color="white", max_words=2000, mask=mask)
+clean_string = ','.join(words)
+wc.generate(clean_string)
+
+f = plt.figure(figsize=(50,50))
+f.add_subplot(1,2,1)
+plt.imshow(mask, cmap=plt.cm.gray, interpolation='bilinear')
+plt.title('Original Stencil', size=40)
+plt.axis("off")
+
+f.add_subplot(1,2,2)
+plt.imshow(wc, interpolation='bilinear')
+plt.title('Twitter Generated Cloud', size=40)
+plt.axis("off")
+plt.show()
