@@ -1,6 +1,5 @@
 import json
 import re
-#from tweepy import OAuthHandler
 import numpy as np
 import matplotlib.pyplot as plt
 from twython import Twython
